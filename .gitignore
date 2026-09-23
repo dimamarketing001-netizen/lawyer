@@ -1,0 +1,27 @@
+# Боевые ключи интеграции. Шаблон — api/secrets.example.php
+api/secrets.php
+
+# Логи заявок: содержат персональные данные (имя, телефон, описание проблемы)
+api/storage/
+storage/
+*.log
+retried_success.json
+
+# Устаревшая копия крон-скрипта от другого сайта, внутри — токен и чужой путь.
+# Актуальная версия — api/retry.php. Файл стоит удалить с сервера.
+assets/retry.php
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# ОС
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Прочее
+node_modules/
+*.zip
+*.tar.gz

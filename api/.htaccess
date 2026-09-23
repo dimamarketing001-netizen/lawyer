@@ -1,0 +1,5 @@
+# Логи заявок содержат персональные данные — наружу их отдавать нельзя.
+<FilesMatch "\.(log|json)$">
+    Require all denied
+    Deny from all
+</FilesMatch>
