@@ -21,22 +21,8 @@ if (php_sapi_name() !== 'cli') {
 
 $storageWritable = is_dir(STORAGE_DIR) && is_writable(STORAGE_DIR);
 
-// Пингуем Lead-Injector заведомо неверным токеном: так проверяется сеть и
-// сертификат, но лид в CRM не создаётся.
-$ch = curl_init(LEAD_INJECTOR_URL . '?token=healthcheck');
-curl_setopt_array($ch, [
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => '{}',
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT        => 10,
-    CURLOPT_SSL_VERIFYPEER => true,
-    CURLOPT_SSL_VERIFYHOST => 2,
-    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-]);
-$ping      = curl_exec($ch);
-$pingCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$pingError = curl_error($ch);
-curl_close($ch);
+// Проверяем только локальную конфигурацию: запрос к webhook может создать лид.
+$pingError = '';
 
 $rows = [
     'PHP'                    => PHP_VERSION,
@@ -44,9 +30,10 @@ $rows = [
     'Часовой пояс'           => date_default_timezone_get() . ' (сейчас ' . date('Y-m-d H:i:s') . ')',
     'Каталог логов'          => STORAGE_DIR,
     'Каталог доступен'       => $storageWritable ? 'да' : 'НЕТ — заявки не логируются',
-    'Каталог вне сайта'      => str_starts_with(STORAGE_DIR, BASE_DIR) ? 'нет — закрыт через .htaccess' : 'да',
+    'Каталог вне сайта'      => strpos(STORAGE_DIR, BASE_DIR) === 0 ? 'нет — закрыт через .htaccess' : 'да',
     'leads.log'              => file_exists(LOG_FILE) ? (filesize(LOG_FILE) . ' байт, заявок: ' . count(file(LOG_FILE, FILE_SKIP_EMPTY_LINES))) : 'ещё не создан',
-    'Lead-Injector'          => $pingError !== '' ? 'ОШИБКА СВЯЗИ: ' . $pingError : 'отвечает, HTTP ' . $pingCode,
+    'Webhook'                => LEAD_INJECTOR_URL,
+    'Проверка приёма'         => 'отправьте тестовую заявку через сайт',
 ];
 
 foreach ($rows as $key => $value) {

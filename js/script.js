@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  var PHONE = '+7 (921) 117-62-38';
-  var PHONE_HREF = 'tel:+79211176238';
+  var PHONE = '8 (800) 505-67-97';
+  var PHONE_HREF = 'tel:88005056797';
   var AVATAR = 'assets/img/avatar.jpg';
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -477,7 +477,7 @@
   Chat.prototype.start = function () {
     var self = this;
     this.setProgress(8);
-    this.addBot('Здравствуйте! Это дежурный юрист «Юрист для людей».');
+    this.addBot('Здравствуйте! Это дежурный юрист ООО «Мой юрист».');
     setTimeout(function () {
       self.say('Расскажите, что у вас произошло — выберите подходящую ситуацию.', function () {
         self.askTopic();

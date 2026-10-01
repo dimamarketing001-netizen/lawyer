@@ -18,14 +18,10 @@ if (!is_file($secretsFile)) {
 require $secretsFile;
 
 // Интеграция
-const LEAD_INJECTOR_URL = 'https://lead-injector.sms19.ru/api/lead';
-
-// Тип лида в CRM
-const LEAD_TYPE_FIELD = 'UF_CRM_1662639727';
-const LEAD_TYPE_VALUE = '10423';
+const LEAD_INJECTOR_URL = 'https://xn--b1ajdba5acbodeeeaj1qb.xn--p1ai/tilda_webhook?type_id=72&source_id=UC_11UXNN';
 
 // Домен-источник, если не удалось определить из запроса
-const DOMAIN_FALLBACK = 'xn--d1aadjija0bkk2khl.xn--p1ai'; // юристдлялюдей.рф
+const DOMAIN_FALLBACK = 'xn--h1apee0d.xn--b1ajdba5acbodeeeaj1qb.xn--p1ai'; // юрист.союзюристовроссии.рф
 
 // Часовой пояс для меток времени в логах (по умолчанию PHP считает время в UTC)
 const LOG_TIMEZONE = 'Europe/Moscow';
@@ -48,7 +44,7 @@ define('RETRY_LOG',   STORAGE_DIR . '/retry.log');
  */
 function resolveStorageDir(): string
 {
-    $outside = dirname(__DIR__, 2) . '/storage';
+    $outside = dirname(__DIR__, 2) . '/storage-moy-yurist';
     if (is_dir($outside) ? is_writable($outside) : @mkdir($outside, 0750, true)) {
         return $outside;
     }
@@ -84,23 +80,23 @@ function appendLog(string $file, string $line): bool
 
 /**
  * Отправка заявки в Lead-Injector.
- * Токен уходит в query, тело — JSON.
+ * type_id и source_id заданы в URL, тело — форма Tilda.
  */
 function sendToLeadInjector(array $payload): array
 {
-    $fullUrl = LEAD_INJECTOR_URL . '?token=' . urlencode(LEAD_INJECTOR_TOKEN);
+    $fullUrl = LEAD_INJECTOR_URL;
 
     $ch = curl_init($fullUrl);
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_POSTFIELDS     => http_build_query($payload),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 15,
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
         CURLOPT_HTTPHEADER     => [
-            'Content-Type: application/json',
+            'Content-Type: application/x-www-form-urlencoded',
             'Accept: application/json',
         ],
     ]);
@@ -120,15 +116,15 @@ function sendToLeadInjector(array $payload): array
 
 /**
  * Сборка payload в формате Lead-Injector.
- * Тип лида — в LEAD_TYPE_FIELD. Выбранная ситуация уходит в поле 0__ без префикса в тексте.
+ * Тип и источник заданы в URL webhook. Выбранная ситуация уходит в поле 0__ без префикса в тексте.
  */
 function buildPayload(array $data): array
 {
     $utm = is_array($data['utm'] ?? null) ? $data['utm'] : [];
 
     $payload = [
-        'name'             => $data['name'] ?? '',
-        'phone'            => $data['phone'] ?? '',
+        'Name'             => $data['name'] ?? '',
+        'Phone'            => $data['phone'] ?? '',
         'city'             => $data['city'] ?? '',
         'region'           => $data['region'] ?? '',
         '0__'              => trim((string) ($data['topic'] ?? '')) ?: 'Другое',
@@ -138,7 +134,6 @@ function buildPayload(array $data): array
         'yandex_client_id' => $data['yandex_client_id'] ?? '',
         'ym_uid'           => $data['cookies']['_ym_uid'] ?? '',
         'ip'               => $data['ip'] ?? '127.0.0.1',
-        LEAD_TYPE_FIELD    => LEAD_TYPE_VALUE,
     ];
 
     foreach ($utm as $key => $value) {
