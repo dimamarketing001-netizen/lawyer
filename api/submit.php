@@ -28,7 +28,15 @@ if (!is_array($input)) {
     exit;
 }
 
-$phone = normalizePhone(clean($input['phone'] ?? '', 30));
+$phone  = normalizePhone(clean($input['phone'] ?? '', 30));
+$region = clean($input['region'] ?? '', 150);
+$city   = clean($input['city'] ?? '', 150);
+
+if ($region === '' || $city === '') {
+    http_response_code(422);
+    echo json_encode(['ok' => false, 'error' => 'location_required'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 if ($phone === '') {
     http_response_code(422);
@@ -52,8 +60,8 @@ $topic   = clean($input['topic'] ?? '', 150);
 $data = [
     'name'             => clean($input['name'] ?? '', 100),
     'phone'            => $phone,
-    'city'             => '',
-    'region'           => '',
+    'city'             => $city,
+    'region'           => $region,
     'topic'            => $topic,
     'details'          => $details,
     'deadline'         => clean($input['deadline'] ?? '', 30),
