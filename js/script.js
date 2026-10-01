@@ -762,12 +762,32 @@
         self.data.phone = value;
         self.addUser(value);
         track('chat_phone');
-        self.submit();
+        self.submit(true);
       }
     });
   };
 
-  Chat.prototype.submit = function () {
+  // Комментарий остаётся в чате; заявку повторно не отправляем.
+  Chat.prototype.askDetails = function () {
+    var self = this;
+    this.askInput({
+      placeholder: 'Например: пришла повестка в суд на 3 октября',
+      multiline: true,
+      skip: 'Расскажу по телефону',
+      validate: function () { return null; },
+      onSubmit: function (value) {
+        if (value) self.addUser(value);
+        self.data.details = value;
+        self.finish();
+      },
+      onSkip: function () {
+        self.addUser('Расскажу по телефону');
+        self.finish();
+      }
+    });
+  };
+
+  Chat.prototype.submit = function (askDetails) {
     var self = this;
 
     var lead = {
@@ -787,6 +807,18 @@
     sendLead(lead);
     track('lead', { topic: lead.topic });
 
+    if (askDetails) {
+      this.setProgress(82);
+      this.say('Заявка принята. При желании опишите в двух словах, что случилось. Пока комментарий остаётся только в этом чате — подробности можно рассказать юристу по телефону.', function () {
+        self.askDetails();
+      });
+    } else {
+      this.finish();
+    }
+  };
+
+  Chat.prototype.finish = function () {
+    var self = this;
     this.setProgress(100);
     var when = isWorkingNow()
       ? 'в течение 15 минут'
