@@ -479,39 +479,45 @@
     this.setProgress(8);
     this.addBot('Здравствуйте! Это дежурный юрист «Юрист для людей».');
     setTimeout(function () {
-      self.say('Расскажите, что у вас произошло — выберите тему или опишите своими словами.', function () {
+      self.say('Расскажите, что у вас произошло — выберите подходящую ситуацию.', function () {
         self.askTopic();
       });
     }, reduceMotion ? 60 : 550);
   };
 
-  Chat.prototype.askTopic = function () {
+  Chat.prototype.askTopic = function (fastMode) {
     var self = this;
     var chips = TOPICS.map(function (t) {
       return '<button class="chip" type="button" data-chip="' + esc(t) + '">' + esc(t) + '</button>';
     }).join('');
     this.foot.innerHTML =
       '<div class="chat__chips">' + chips + '</div>' +
-      '<button class="chat__fast" type="button" data-fast>Некогда писать — перезвоните мне</button>';
+      (fastMode ? '' : '<button class="chat__fast" type="button" data-fast>Некогда писать — перезвоните мне</button>');
 
     $$('[data-chip]', this.foot).forEach(function (btn) {
       btn.addEventListener('click', function () {
-        self.pickTopic(btn.getAttribute('data-chip'));
+        var topic = btn.getAttribute('data-chip');
+        if (!fastMode) { self.pickTopic(topic); return; }
+        self.data.topic = topic;
+        self.addUser(topic);
+        track('chat_topic', { topic: topic });
+        self.setProgress(40);
+        self.say('Сначала выберите регион и город — затем оставьте номер.', function () {
+          self.askRegion(function () {
+            self.say('Теперь оставьте номер — перезвоним в течение 15 минут.', function () {
+              self.fastPhone();
+            });
+          });
+        });
       });
     });
 
-    // Быстрый путь для нетерпеливых: сразу телефон, тему выясним в разговоре
-    $('[data-fast]', this.foot).addEventListener('click', function () {
+    // В быстром сценарии ситуация тоже обязательна, имя не спрашиваем.
+    if (!fastMode) $('[data-fast]', this.foot).addEventListener('click', function () {
       track('chat_fastpath');
-      self.data.topic = 'Заказ обратного звонка';
       self.addUser('Некогда писать — перезвоните мне');
-      self.setProgress(40);
-      self.say('Конечно. Сначала выберите регион и город — затем оставьте номер.', function () {
-        self.askRegion(function () {
-          self.say('Теперь оставьте номер — перезвоним в течение 15 минут.', function () {
-            self.fastPhone();
-          });
-        });
+      self.say('Выберите ситуацию. Если подходящей нет — нажмите «Другое».', function () {
+        self.askTopic(true);
       });
     });
   };

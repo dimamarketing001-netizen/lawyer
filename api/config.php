@@ -120,7 +120,7 @@ function sendToLeadInjector(array $payload): array
 
 /**
  * Сборка payload в формате Lead-Injector.
- * Тип лида — в LEAD_TYPE_FIELD. Комментарий пока не передаём.
+ * Тип лида — в LEAD_TYPE_FIELD. Выбранная ситуация уходит в поле 0__ с префиксом 0__.
  */
 function buildPayload(array $data): array
 {
@@ -131,6 +131,7 @@ function buildPayload(array $data): array
         'phone'            => $data['phone'] ?? '',
         'city'             => $data['city'] ?? '',
         'region'           => $data['region'] ?? '',
+        '0__'              => '0__ ' . (trim((string) ($data['topic'] ?? '')) ?: 'Другое'),
         'source'           => $data['source'] ?? DOMAIN_FALLBACK,
         'quality'          => $data['quality'] ?? 'good',
         'score'            => (int) ($data['score'] ?? 0),
