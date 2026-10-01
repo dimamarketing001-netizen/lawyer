@@ -687,6 +687,18 @@
         self.data.city = '';
         self.addUser(value);
         self.setProgress(60);
+
+        var cities = locations[value] || [];
+
+        // Для городов федерального значения отдельный выбор города не нужен.
+        // Если у субъекта нет отдельного списка городов, сохраняем сам субъект как город.
+        if (cities.length === 0) {
+          self.data.city = value.replace(/^г\.\s*/, '');
+          self.setProgress(70);
+          if (done) done();
+          return;
+        }
+
         self.say('Теперь выберите город в регионе «' + esc(value) + '».', function () {
           self.askCity(done);
         });
