@@ -505,9 +505,13 @@
       track('chat_fastpath');
       self.data.topic = 'Заказ обратного звонка';
       self.addUser('Некогда писать — перезвоните мне');
-      self.setProgress(50);
-      self.say('Конечно. Оставьте номер — перезвоним в течение 15 минут.', function () {
-        self.fastPhone();
+      self.setProgress(40);
+      self.say('Конечно. Сначала выберите регион и город — затем оставьте номер.', function () {
+        self.askRegion(function () {
+          self.say('Теперь оставьте номер — перезвоним в течение 15 минут.', function () {
+            self.fastPhone();
+          });
+        });
       });
     });
   };
@@ -629,6 +633,85 @@
     }
   };
 
+  Chat.prototype.askSelect = function (opts) {
+    var self = this;
+    var options = (opts.options || []).map(function (item) {
+      return '<option value="' + esc(item) + '">' + esc(item) + '</option>';
+    }).join('');
+
+    this.foot.innerHTML =
+      '<form class="chat__form" data-form novalidate>' +
+        '<div class="chat__row">' +
+          '<select class="chat__input" data-input aria-label="' + esc(opts.placeholder) + '">' +
+            '<option value="" selected disabled>' + esc(opts.placeholder) + '</option>' +
+            options +
+          '</select>' +
+          '<button class="chat__send" type="submit" aria-label="Продолжить">' + SEND_ICON + '</button>' +
+        '</div>' +
+        '<p class="chat__error" data-error hidden></p>' +
+      '</form>';
+
+    var form = $('[data-form]', this.foot);
+    var input = $('[data-input]', this.foot);
+    var error = $('[data-error]', this.foot);
+
+    input.addEventListener('change', function () {
+      input.classList.remove('has-error');
+      error.hidden = true;
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var value = input.value;
+      if (!value) {
+        input.classList.add('has-error');
+        error.textContent = opts.error || 'Выберите значение из списка';
+        error.hidden = false;
+        return;
+      }
+      opts.onSubmit(value);
+    });
+  };
+
+  Chat.prototype.askRegion = function (done) {
+    var self = this;
+    var locations = window.RUSSIA_LOCATIONS || {};
+    var regions = Object.keys(locations);
+
+    this.askSelect({
+      placeholder: 'Выберите регион',
+      options: regions,
+      error: 'Выберите регион из списка',
+      onSubmit: function (value) {
+        self.data.region = value;
+        self.data.city = '';
+        self.addUser(value);
+        self.setProgress(60);
+        self.say('Теперь выберите город в регионе «' + esc(value) + '».', function () {
+          self.askCity(done);
+        });
+      }
+    });
+  };
+
+  Chat.prototype.askCity = function (done) {
+    var self = this;
+    var locations = window.RUSSIA_LOCATIONS || {};
+    var cities = locations[this.data.region] || [];
+
+    this.askSelect({
+      placeholder: 'Выберите город',
+      options: cities,
+      error: 'Выберите город из списка',
+      onSubmit: function (value) {
+        self.data.city = value;
+        self.addUser(value);
+        self.setProgress(70);
+        if (done) done();
+      }
+    });
+  };
+
   Chat.prototype.askName = function () {
     var self = this;
     this.askInput({
@@ -638,10 +721,14 @@
       onSubmit: function (value) {
         self.data.name = value;
         self.addUser(value);
-        self.setProgress(60);
+        self.setProgress(50);
         self.saveDraft();
-        self.say('Приятно познакомиться, ' + esc(value) + '. На какой номер перезвонить?<br>Звоним один раз, без рассылок.', function () {
-          self.askPhone();
+        self.say('Приятно познакомиться, ' + esc(value) + '. Сначала уточним регион и город — так мы направим обращение нужному юристу.', function () {
+          self.askRegion(function () {
+            self.say('Спасибо. На какой номер перезвонить?<br>Звоним один раз, без рассылок.', function () {
+              self.askPhone();
+            });
+          });
         });
       }
     });
@@ -697,6 +784,8 @@
     var lead = {
       topic: this.data.topic,
       name: this.data.name,
+      region: this.data.region || '',
+      city: this.data.city || '',
       phone: this.data.phone,
       details: this.data.details || '',
       deadline: pendingDate || '',
