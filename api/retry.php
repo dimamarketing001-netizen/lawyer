@@ -76,7 +76,6 @@ while (($line = fgets($handle)) !== false) {
     logMessage("Найдена упавшая заявка: {$phone} от {$timestamp}. Отправляем...");
 
     $payload = buildPayload($jsonData);
-    $payload['0__'] = buildComment($jsonData, true); // пометка о повторной отправке
 
     $result = sendToLeadInjector($payload);
 

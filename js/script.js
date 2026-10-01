@@ -761,30 +761,7 @@
       onSubmit: function (value) {
         self.data.phone = value;
         self.addUser(value);
-        self.setProgress(82);
         track('chat_phone');
-        self.say('Спасибо. Опишите в двух словах, что случилось — юрист подготовится к разговору заранее.', function () {
-          self.askDetails();
-        });
-      }
-    });
-  };
-
-  // Последний шаг: описание уходит сразу, без подтверждающей кнопки
-  Chat.prototype.askDetails = function () {
-    var self = this;
-    this.askInput({
-      placeholder: 'Например: пришла повестка в суд на 3 октября',
-      multiline: true,
-      skip: 'Расскажу по телефону',
-      validate: function () { return null; },
-      onSubmit: function (value) {
-        if (value) self.addUser(value);
-        self.data.details = value;
-        self.submit();
-      },
-      onSkip: function () {
-        self.addUser('Расскажу по телефону');
         self.submit();
       }
     });
@@ -799,7 +776,6 @@
       region: this.data.region || '',
       city: this.data.city || '',
       phone: this.data.phone,
-      details: this.data.details || '',
       deadline: pendingDate || '',
       campaign: campaign,
       page: window.location.href

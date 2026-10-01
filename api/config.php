@@ -120,7 +120,7 @@ function sendToLeadInjector(array $payload): array
 
 /**
  * Сборка payload в формате Lead-Injector.
- * Комментарий уходит в поле «0__», тип лида — в LEAD_TYPE_FIELD.
+ * Тип лида — в LEAD_TYPE_FIELD. Комментарий пока не передаём.
  */
 function buildPayload(array $data): array
 {
@@ -131,7 +131,6 @@ function buildPayload(array $data): array
         'phone'            => $data['phone'] ?? '',
         'city'             => $data['city'] ?? '',
         'region'           => $data['region'] ?? '',
-        '0__'              => buildComment($data),
         'source'           => $data['source'] ?? DOMAIN_FALLBACK,
         'quality'          => $data['quality'] ?? 'good',
         'score'            => (int) ($data['score'] ?? 0),
@@ -146,64 +145,4 @@ function buildPayload(array $data): array
     }
 
     return $payload;
-}
-
-/**
- * Комментарий для карточки лида. Оформление то же, что в остальных проектах,
- * чтобы менеджеры читали привычный формат.
- */
-function buildComment(array $data, bool $isRetry = false): string
-{
-    $parts = [];
-    $parts[] = 'Заявка с сайта «Юрист для людей»' . ($isRetry ? ' (ПОВТОРНАЯ ОТПРАВКА)' : '');
-
-    $quality = $data['quality'] ?? 'good';
-    $score   = (int) ($data['score'] ?? 0);
-    $parts[] = "Оценка лида: {$quality} ({$score} баллов)";
-
-    $loc = trim(implode(', ', array_filter([$data['city'] ?? '', $data['region'] ?? ''])), ', ');
-    if ($loc !== '') {
-        $parts[] = "Регион: {$loc}";
-    }
-
-    $parts[] = '';
-    $parts[] = '═══ ОБРАЩЕНИЕ ═══';
-    if (!empty($data['topic'])) {
-        $parts[] = '• Тема: ' . $data['topic'];
-    }
-    if (!empty($data['deadline'])) {
-        $parts[] = '• Ближайшая важная дата: ' . $data['deadline'];
-    }
-    if (!empty($data['details'])) {
-        $parts[] = '• Описание: ' . $data['details'];
-    } else {
-        $parts[] = '• Описание: не заполнено, клиент расскажет по телефону';
-    }
-
-    $utm = is_array($data['utm'] ?? null) ? $data['utm'] : [];
-    if ($utm !== []) {
-        $parts[] = '';
-        $parts[] = '═══ UTM ═══';
-        foreach ($utm as $key => $value) {
-            $parts[] = "{$key}: {$value}";
-        }
-    }
-
-    $parts[] = '';
-    $parts[] = '═══ АНАЛИТИКА ═══';
-    if (!empty($data['yandex_client_id'])) {
-        $parts[] = 'Yandex ClientID: ' . $data['yandex_client_id'];
-    }
-    if (!empty($data['cookies']['_ym_uid'])) {
-        $parts[] = '_ym_uid: ' . $data['cookies']['_ym_uid'];
-    }
-    $parts[] = 'IP: ' . ($data['ip'] ?? '127.0.0.1');
-    if (!empty($data['user_agent'])) {
-        $parts[] = 'User-Agent: ' . mb_substr($data['user_agent'], 0, 200);
-    }
-    if (!empty($data['page'])) {
-        $parts[] = 'Страница: ' . $data['page'];
-    }
-
-    return implode("\n", $parts);
 }
